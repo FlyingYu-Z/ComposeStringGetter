@@ -17,16 +17,14 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cn.beingyi.idea.manager.ProjectSwitchManager
+import cn.beingyi.idea.manager.ProjectPool
 import cn.beingyi.idea.model.MappingBean
 import cn.beingyi.idea.theme.WidgetTheme
-import cn.beingyi.idea.utils.JavaNameUtil
 import com.intellij.openapi.fileChooser.FileChooser
 import com.intellij.openapi.fileChooser.FileChooserDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.vfs.VirtualFileManager
-import com.intellij.util.PathUtil
 import java.io.File
 import javax.swing.JComponent
 
@@ -37,9 +35,10 @@ import javax.swing.JComponent
  */
 class AddDialog(val project: Project) : DialogWrapper(project) {
 
+    private val loadedProject = ProjectPool.getLoadedProjectOrCreate(project)
+
     val languageTag = mutableStateOf("")
-    val defaultSrcXml = mutableStateOf(false)
-    val srcXmlPath = mutableStateOf("")
+    val stringXmlFile = mutableStateOf("")
 
     val errMsg = mutableStateOf("")
 
@@ -60,11 +59,11 @@ class AddDialog(val project: Project) : DialogWrapper(project) {
                         Column(modifier = Modifier.fillMaxSize()) {
                             Column(modifier = Modifier.fillMaxSize().weight(1.0f)) {
 
-                                inputItem("languageTag", languageTag.value.lowercase()){
-                                    languageTag.value=it.lowercase()
+                                inputItem("languageTag", languageTag.value.lowercase()) {
+                                    languageTag.value = it.lowercase()
                                 }
-                                radioItem("defaultSrcXml", defaultSrcXml)
-                                pathInputItem("srcXmlPath", srcXmlPath, true, false)
+                                //radioItem("defaultSrcXml", defaultSrcXml)
+                                pathInputItem("stringXmlFile", stringXmlFile, true, false)
 
                             }
                             Text(
@@ -81,7 +80,7 @@ class AddDialog(val project: Project) : DialogWrapper(project) {
 
 
     @Composable
-    private fun inputItem(itemName: String, value: String,onValueChange: (String) -> Unit) {
+    private fun inputItem(itemName: String, value: String, onValueChange: (String) -> Unit) {
         Row(modifier = Modifier.fillMaxWidth().height(40.dp), horizontalArrangement = Arrangement.Start) {
             Text(
                 modifier = Modifier.weight(0.3f).align(Alignment.CenterVertically),
@@ -89,16 +88,17 @@ class AddDialog(val project: Project) : DialogWrapper(project) {
                 fontSize = 12.sp,
                 color = Color.White
             )
-            BasicTextField(modifier = Modifier.fillMaxHeight().padding(10.dp, 5.dp, 10.dp, 5.dp).weight(0.7f)
-                .align(Alignment.CenterVertically)
-                .background(Color(0xff45494a))
-                .border(1.dp, Color.White),
+            BasicTextField(
+                modifier = Modifier.fillMaxHeight().padding(10.dp, 5.dp, 10.dp, 5.dp).weight(0.7f)
+                    .align(Alignment.CenterVertically)
+                    .background(Color(0xff45494a))
+                    .border(1.dp, Color.White),
                 maxLines = 1,
                 singleLine = true,
                 textStyle = TextStyle(color = Color.White, textAlign = TextAlign.Justify),
                 cursorBrush = SolidColor(Color.White),
                 value = value,
-                onValueChange =onValueChange
+                onValueChange = onValueChange
             )
 
         }
@@ -119,7 +119,7 @@ class AddDialog(val project: Project) : DialogWrapper(project) {
                 fontSize = 12.sp,
                 color = Color.White
             )
-            Row (modifier = Modifier.weight(0.7f).align(Alignment.CenterVertically)){
+            Row(modifier = Modifier.weight(0.7f).align(Alignment.CenterVertically)) {
                 BasicTextField(modifier = Modifier.fillMaxHeight().padding(10.dp, 5.dp, 10.dp, 5.dp).weight(1.0f)
                     .align(Alignment.CenterVertically)
                     .background(Color(0xff45494a))
@@ -200,27 +200,25 @@ class AddDialog(val project: Project) : DialogWrapper(project) {
             errMsg.value = "languageTag can not be empty"
             return
         }
-        if (srcXmlPath.value.isEmpty()) {
+        if (stringXmlFile.value.isEmpty()) {
             errMsg.value = "srcXmlPath can not be empty"
             return
         }
-        val srcXmlPathFile=File(srcXmlPath.value)
-        if(!srcXmlPathFile.exists()){
+        val srcXmlPathFile = File(stringXmlFile.value)
+        if (!srcXmlPathFile.exists()) {
             errMsg.value = "file does not exist：${srcXmlPathFile.absolutePath}"
             return
         }
         val mappingBean = MappingBean()
         mappingBean.languageTag = languageTag.value
-        mappingBean.defaultSrcXml = defaultSrcXml.value
-        mappingBean.srcXmlPath = srcXmlPathFile.absolutePath
+        mappingBean.stringXmlFile = stringXmlFile.value
 
-        if (ProjectSwitchManager.instance.isExistMapping(project, mappingBean)) {
+        if (loadedProject.isExistMapping(mappingBean)) {
             errMsg.value = "already exist the mapping"
             return
         }
-        ProjectSwitchManager.instance.putMapping(project, mappingBean)
+        loadedProject.putMapping(mappingBean)
         super.doOKAction()
-        ProjectSwitchManager.instance.refreshMappingList(project)
     }
 
 }

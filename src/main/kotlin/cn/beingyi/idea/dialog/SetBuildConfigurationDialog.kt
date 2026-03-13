@@ -17,8 +17,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cn.beingyi.idea.manager.ProjectSwitchManager
-import cn.beingyi.idea.model.MappingBean
+import cn.beingyi.idea.manager.ProjectPool
 import cn.beingyi.idea.theme.WidgetTheme
 import cn.beingyi.idea.utils.JavaNameUtil
 import com.intellij.openapi.fileChooser.FileChooser
@@ -26,7 +25,6 @@ import com.intellij.openapi.fileChooser.FileChooserDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.vfs.VirtualFileManager
-import com.intellij.util.PathUtil
 import java.io.File
 import javax.swing.JComponent
 
@@ -36,7 +34,7 @@ import javax.swing.JComponent
  *
  */
 class SetBuildConfigurationDialog(val project: Project) : DialogWrapper(project) {
-
+    private val loadedProject = ProjectPool.getLoadedProjectOrCreate(project)
     val destKotlinPath = mutableStateOf("")
     val packageName = mutableStateOf("")
 
@@ -46,11 +44,11 @@ class SetBuildConfigurationDialog(val project: Project) : DialogWrapper(project)
         title = "Set Build Configuration"
         init()
 
-        if(ProjectSwitchManager.instance.hasBuildConfiguration(project)){
-            val projectConfig=ProjectSwitchManager.instance.getProjectConfig(project)
-            if(projectConfig!=null){
-                destKotlinPath.value=projectConfig.destKotlinPath
-                packageName.value=projectConfig.packageName
+        if (ProjectPool.isProjectEnabled(project)) {
+            val projectConfig = loadedProject.getProjectConfig()
+            if (projectConfig != null) {
+                destKotlinPath.value = projectConfig.destKotlinPath
+                packageName.value = projectConfig.packageName
             }
         }
 
@@ -68,8 +66,8 @@ class SetBuildConfigurationDialog(val project: Project) : DialogWrapper(project)
                             Column(modifier = Modifier.fillMaxSize().weight(1.0f)) {
 
                                 pathInputItem("destKotlinPath", destKotlinPath, false, true)
-                                inputItem("packageName", packageName.value){
-                                    packageName.value=it
+                                inputItem("packageName", packageName.value) {
+                                    packageName.value = it
                                 }
 
                             }
@@ -87,7 +85,7 @@ class SetBuildConfigurationDialog(val project: Project) : DialogWrapper(project)
 
 
     @Composable
-    private fun inputItem(itemName: String, value: String,onValueChange: (String) -> Unit) {
+    private fun inputItem(itemName: String, value: String, onValueChange: (String) -> Unit) {
         Row(modifier = Modifier.fillMaxWidth().height(40.dp), horizontalArrangement = Arrangement.Start) {
             Text(
                 modifier = Modifier.weight(0.3f).align(Alignment.CenterVertically),
@@ -95,16 +93,17 @@ class SetBuildConfigurationDialog(val project: Project) : DialogWrapper(project)
                 fontSize = 12.sp,
                 color = Color.White
             )
-            BasicTextField(modifier = Modifier.fillMaxHeight().padding(10.dp, 5.dp, 10.dp, 5.dp).weight(0.7f)
-                .align(Alignment.CenterVertically)
-                .background(Color(0xff45494a))
-                .border(1.dp, Color.White),
+            BasicTextField(
+                modifier = Modifier.fillMaxHeight().padding(10.dp, 5.dp, 10.dp, 5.dp).weight(0.7f)
+                    .align(Alignment.CenterVertically)
+                    .background(Color(0xff45494a))
+                    .border(1.dp, Color.White),
                 maxLines = 1,
                 singleLine = true,
                 textStyle = TextStyle(color = Color.White, textAlign = TextAlign.Justify),
                 cursorBrush = SolidColor(Color.White),
                 value = value,
-                onValueChange =onValueChange
+                onValueChange = onValueChange
             )
 
         }
@@ -125,7 +124,7 @@ class SetBuildConfigurationDialog(val project: Project) : DialogWrapper(project)
                 fontSize = 12.sp,
                 color = Color.White
             )
-            Row (modifier = Modifier.weight(0.7f).align(Alignment.CenterVertically)){
+            Row(modifier = Modifier.weight(0.7f).align(Alignment.CenterVertically)) {
                 BasicTextField(modifier = Modifier.fillMaxHeight().padding(10.dp, 5.dp, 10.dp, 5.dp).weight(1.0f)
                     .align(Alignment.CenterVertically)
                     .background(Color(0xff45494a))
@@ -182,8 +181,8 @@ class SetBuildConfigurationDialog(val project: Project) : DialogWrapper(project)
             errMsg.value = "destKotlinPath can not be empty"
             return
         }
-        val destKotlinPathFile=File(destKotlinPath.value)
-        if(!destKotlinPathFile.exists()){
+        val destKotlinPathFile = File(destKotlinPath.value)
+        if (!destKotlinPathFile.exists()) {
             errMsg.value = "file does not exist：${destKotlinPathFile.absolutePath}"
             return
         }
@@ -196,7 +195,7 @@ class SetBuildConfigurationDialog(val project: Project) : DialogWrapper(project)
             return
         }
         super.doOKAction()
-        ProjectSwitchManager.instance.setBuildConfiguration(project,destKotlinPath.value,packageName.value)
+        loadedProject.setBuildConfiguration(destKotlinPath.value, packageName.value)
     }
 
 }

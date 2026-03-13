@@ -36,6 +36,7 @@
     <projectListeners>
         <listener class="cn.beingyi.idea.listeners.MyFocusChangeListener"
             topic="com.intellij.openapi.editor.ex.FocusChangeListener"/>
+        <listener class="cn.beingyi.idea.listeners.MyFileDocumentListener" topic="com.intellij.openapi.fileEditor.FileDocumentManagerListener"/>
     </projectListeners>
 
     <actions>
@@ -49,6 +50,10 @@
 
         <group id="org.intellij.sdk.action.GroupedActions" text="Jetpack Compose i18n" popup="true">
             <add-to-group group-id="BuildMenu" anchor="after" relative-to-action="PopupMenuActions"/>
+
+<!--            <action class="cn.beingyi.idea.action.SwitchAction" id="switch"-->
+<!--                    text="Enabled" description="null description">-->
+<!--            </action>-->
 
             <action id="test_id" class="cn.beingyi.idea.action.JetpackComposeI18nMgmtAction" text="Management"
                 description="null description">

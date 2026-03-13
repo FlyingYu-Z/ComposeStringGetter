@@ -17,20 +17,19 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cn.beingyi.idea.manager.ProjectSwitchManager
+import cn.beingyi.idea.manager.ProjectPool
 import cn.beingyi.idea.theme.WidgetTheme
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.SelectionModel
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.modifyModules
 import com.intellij.openapi.ui.DialogWrapper
 import org.apache.commons.lang3.StringUtils
-import org.jetbrains.annotations.NotNull
-import org.jetbrains.annotations.Nullable
 import javax.swing.JComponent
 
 /**
@@ -38,23 +37,21 @@ import javax.swing.JComponent
  * date: 2021/8/4 14:53
  *
  */
-class StringPropertyDialog(project: Project?, editor: Editor) : DialogWrapper(project) {
+class StringPropertyDialog(private val project: Project, editor: Editor) : DialogWrapper(project) {
 
     private val moduleList = ArrayList<Module>()
-    private val project: Project
 
     private val selectionModel: SelectionModel
     private val document: Document
 
-    val resNameState = mutableStateOf("")
-    val resValueState = mutableStateOf("")
+    private val resNameState = mutableStateOf("")
+    private val resValueState = mutableStateOf("")
 
     init {
         title = "Extra Resource"
         init()
-        this.project = project!!
 
-        project?.modifyModules {
+        project.modifyModules {
             modules.forEach { module ->
                 moduleList.add(module)
             }
@@ -116,16 +113,16 @@ class StringPropertyDialog(project: Project?, editor: Editor) : DialogWrapper(pr
         if (resNameState.value.isEmpty()) {
             return
         }
-//        val projectInfo = ProjectSwitchManager.instance.getProjectInfo(project)
-//        projectInfo?.mainLanguageFile?.checkValue(resNameState.value, resValueState.value)
-//
-//        val app = ApplicationManager.getApplication()
-//        WriteCommandAction.runWriteCommandAction(project) {
-//            app.runWriteAction {
-//                document.replaceString(selectionModel.selectionStart, selectionModel.selectionEnd, resNameState.value)
-//            }
-//        }
-
+        FileDocumentManager.getInstance().saveAllDocuments()
+        val loadedProject = ProjectPool.getLoadedProject(project)!!
+        val app = ApplicationManager.getApplication()
+        WriteCommandAction.runWriteCommandAction(project) {
+            app.runWriteAction {
+                loadedProject.getMainLanguageFile().checkValue(resNameState.value,resValueState.value)
+                document.replaceString(selectionModel.selectionStart, selectionModel.selectionEnd, resNameState.value)
+            }
+        }
+        super.doOKAction()
         close(CLOSE_EXIT_CODE)
     }
 

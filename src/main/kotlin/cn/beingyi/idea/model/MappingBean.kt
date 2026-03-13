@@ -8,7 +8,6 @@ package cn.beingyi.idea.model
 class MappingBean {
 
     var languageTag = ""
-    var defaultSrcXml = false
-    var srcXmlPath = ""
+    var stringXmlFile = ""
 
 }

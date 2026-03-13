@@ -8,15 +8,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.Card
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.dp
 
 val MiniatureHoverColor = Color(0x66CDC9C9)
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun Clickable(
     modifier: Modifier = Modifier,
@@ -29,19 +33,12 @@ fun Clickable(
 
     Card(
         backgroundColor = if (enable && cardHover.value) MiniatureHoverColor else Color.Transparent,
-        modifier = modifier.hover(
-            onEnter = {
-                cardHover.value = true
-                false
-            },
-            onExit = {
+        modifier = modifier.onPointerEvent(PointerEventType.Enter) {
+            cardHover.value = true
+        }
+            .onPointerEvent(PointerEventType.Exit) {
                 cardHover.value = false
-                false
             },
-            onMove = {
-                false
-            }
-        ),
         shape = shape,
         elevation = 0.dp
     ) {
